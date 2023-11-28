@@ -1,3 +1,4 @@
+
 # Note: The following confusion matrix code is a remix of Scikit-Learn's
 # plot_confusion_matrix function - https://scikit-learn.org/stable/modules/generated/sklearn.metrics.plot_confusion_matrix.html
 import itertools
@@ -89,10 +90,14 @@ def make_confusion_matrix(y_true, y_pred,
 
 
 
-def binary_plot_loss_history_confiusion_matrix(model,pl_history, pl_X_test, pl_y_test, classes=None,lost_fig_size=(10, 10), figsize=(10, 10), text_size=15, norm=True, savefig=False):
+def binary_plot_loss_history_confiusion_matrix(model,pl_history, pl_X_test, pl_y_test, 
+                                               classes=None,lost_fig_size=(10, 10), figsize=(10, 10), 
+                                               text_size=15, norm=True, savefig=False,
+                                               save_model=False,save_path=""):
   
   """ Make skelearn report with loass and accuracy plot with learning rate if preset
-  and confusion matrix and loss history also showing higest validation accuracy against learning rate
+  and confusion matrix and loss history also showing higest validation accuracy against learning rate also
+  option to save model and confusion matrix to file
   
   Arug:
     model: model
@@ -104,7 +109,9 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history, pl_X_test, pl_y
     figsize: size of confusion matrix
     text_size: size of text in confusion matrix
     norm: normalize confusion matrix with % result in confusion matrix
-    savefig: save confusion matrix to file (default=False).
+    savefig: save confusion matrix to file (default=False)
+    save_model: save model( default=False)
+    save_path: path to save model (default="")
     """
 
 
@@ -118,8 +125,17 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history, pl_X_test, pl_y
 
   # evluate model:
   print('Evluate model:')
-  model.evaluate(pl_X_test, pl_y_test)
+  evaluate_data =  model.evaluate(pl_X_test, pl_y_test)
+  print()
 
+  # Save model
+  if save_model:
+    model.save(f"{save_path}_{round((evaluate_data[1]),2)}")
+
+    print(f"Model saved to {save_path}_{round((evaluate_data[1]),2)}")
+    print() 
+
+  # try if learning rate 
   try :
     if pl_history.history['lr']:
       learing_data = pd.DataFrame(pl_history.history)
@@ -130,6 +146,7 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history, pl_X_test, pl_y
 
       # print(learing_data)
       print(learing_data[["lr",'val_accuracy',"val_loss"]])
+      print()
 
   except:
     pass    
@@ -139,6 +156,8 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history, pl_X_test, pl_y
     print(classification_report(pl_y_test, pl_y_pred > 0.5,target_names=classes))
   else:
     print(classification_report(pl_y_test, pl_y_pred > 0.5))  
+  
+  print()
 
   # plot loss history
   
@@ -167,12 +186,19 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history, pl_X_test, pl_y
 
 
 # function to plot loss and 
-def plot_loss_and_learning_rate(pl_history):
+def plot_loss_and_learning_rate(pl_history,pl_model=None,pl_X_test=None, pl_y_test=None,save_model=False,save_path=""):
 
   """ plot loss and learning rate if preset for not categorical model
+      able to save model in specific path give evaluated data to and show 5 best learning rate 
 
     Arug:
-    pl_history: history of model"""
+    pl_history: history of model
+    save_model: save model( default=False)
+    save_path: path to save model (default="")
+    model: model (default=None)
+    pl_X_test: test data input (default=None)
+    pl_y_test: test data output (default=None)
+    """
   
   # plot loss history
   plt.figure(figsize=(10, 10))
@@ -183,7 +209,8 @@ def plot_loss_and_learning_rate(pl_history):
   plt.ylabel('loss')
   plt.xlabel('epoch')
   plt.legend(['train', 'val'], loc='upper left')
-
+  
+  # try if learning rate
   try :
     if pl_history.history['lr']:
       learing_data = pd.DataFrame(pl_history.history)
@@ -193,8 +220,21 @@ def plot_loss_and_learning_rate(pl_history):
       learing_data = learing_data.head(5)
 
       # print(learing_data)
-      print(learing_data[["lr",'val_accuracy',"val_loss"]])
+      print(learing_data[["lr","val_loss"]])
+      print()
 
   except:
-    pass    
+    pass
+
+  if pl_model and pl_X_test and pl_y_test:
+    evaluate_data =  pl_model.evaluate(pl_X_test, pl_y_test) 
   
+  # Save model
+  if save_model and pl_model:
+    pl_model.save(f"{save_path}_{evaluate_data[1]}")
+
+    print(f"Model saved to {save_path}_{evaluate_data[1]}")   
+
+  
+  
+

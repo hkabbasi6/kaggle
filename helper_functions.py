@@ -266,3 +266,340 @@ def unzip_data(zip_file,uzipath=""):
 
   zip_ref.close()
 
+
+
+
+""" All code below this is main code made by me  """
+
+
+from pandas.core import series
+# make data from Moon_jellyfish folder
+from os import listdir
+from os.path import isfile, join
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+
+
+def prpeare_data_from_folder(main_path,main_data_return=True,numpy_return=False,commits=""):
+  """ Collect image and label from folder then create dataframe for X and y
+
+  Args:
+    main_path: path to folder in which image and label are prsent
+    main_data_return: return dataframe with image and label
+    numpy_return: return numpy array with seperate image and label
+    commits: commits in which data is collected (default="") can be traning or testing or validation
+  """
+
+  classification = []
+  for i in listdir(main_path):
+    # drop csv file extension
+    # print(i)
+    classification.append(i)
+
+  # loop through each folder
+  image_data = []
+  label_data = []
+
+  for image_path in classification:
+    for image in listdir(main_path+"/"+image_path):
+      image_data.append(main_path+"/"+image_path+"/"+image)
+      label_data.append(image_path)
+
+  df = pd.DataFrame({
+
+    'image': image_data,
+    'label' : label_data
+
+})
+
+  # print dataframe quantity in
+  print(f" For {commits} Total images: {len(df)} and Total labels: {len(classification)}")
+
+  # if numpy return True then return X and y in numpy array
+  if numpy_return:
+    return df['image'].to_numpy(), df['label'].to_numpy()
+  # return data dataframe combine
+  elif main_data_return:
+    return df
+  # return image and label in dataframe
+  else:
+    return df['image'], df['label']
+
+
+
+
+
+  
+  
+
+# preperforning data into tensor
+def prepare_data_to_tensor(x, y=None, batch_size=32, valid_data=False, test_data=False,
+                        IMG_SIZE=224,rescale=True):
+  
+  def process_image(image_path):
+                
+                  
+    """
+    Takes an image from file path convert into 3 colour channel tensor then resize it and return .
+    """
+    # Read in image file
+    image = tf.io.read_file(image_path)
+    # Turn the jpeg image into numerical Tensor with 3 colour channels (Red, Green, Blue)
+    image = tf.image.decode_jpeg(image, channels=3)
+    # Convert the colour channel values from 0-225 values to 0-1 values
+    if rescale:
+      image = tf.image.convert_image_dtype(image, tf.float32)
+    # Resize the image to our desired size (224, 244)
+    image = tf.image.resize(image, size=[IMG_SIZE, IMG_SIZE])
+    return image
+
+
+  # Create a simple function to return a tuple (image, label)
+  def get_image_label(image_path, label):
+    """
+    Takes an image file path name and the associated label,
+    processes the image and returns a tuple of (image, label).
+    """
+    image = process_image(image_path)
+    return image, label
+
+  """
+  Creates batches of data out of image (x) and label (y) pairs.
+  Shuffles the data if it's training data but doesn't shuffle it if it's validation data or test data.
+  .
+  """
+  tf.random.set_seed(42)
+
+  # Autotune for the number of available CPU threads
+  AUTOTUNE = tf.data.AUTOTUNE
+
+  # If the data is a test dataset
+  if test_data:
+    print("Creating test data batches...")
+    data = tf.data.Dataset.from_tensor_slices((tf.constant(x), # filepaths
+                                               tf.constant(y))) # labels
+    data_batch = data.map(get_image_label)
+    return data_batch
+
+  # If the data if a valid dataset, we don't need to shuffle it
+  elif valid_data:
+    print("Creating validation data batches...")
+    data = tf.data.Dataset.from_tensor_slices((tf.constant(x), # filepaths
+                                               tf.constant(y))) # labels
+    data_batch = data.map(get_image_label).batch(batch_size).prefetch(buffer_size=AUTOTUNE)
+    return data_batch
+
+  else:
+    # If the data is a training dataset, we shuffle it
+    print("Creating training data batches...")
+    # Turn filepaths and labels into Tensors
+    data = tf.data.Dataset.from_tensor_slices((tf.constant(x), # filepaths
+                                              tf.constant(y))) # labels
+
+    # Shuffling pathnames and labels before mapping image processor function is faster than shuffling images
+    data = data.shuffle(buffer_size=len(x))
+
+    # Create (image, label) tuples (this also turns the image path into a preprocessed image)
+    data = data.map(get_image_label)
+
+    # Turn the data into batches
+    data_batch = data.batch(batch_size ).prefetch(buffer_size=AUTOTUNE)
+  return data_batch
+
+  
+  
+
+def make_image_database_from_folder(train_path="", valid_path="", test_path="",
+                                    chart_figure=(8,8), comments="", before_process=True, 
+                                    numpy_return=False, main_data_return=False, BATCH_SIZE=32,
+                                    IMG_SIZE=224,rescale=True,train_balance=False,valid_balance=False):
+    """
+    Takes a folder path and returns a tuple of (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
+
+    returns
+    numpy array:
+    return calssfication and tuple of (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
+
+    main dataframe:
+    return calssfication and pandas data frame (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
+    else:
+    return classification and partially train_image, train_label, valid_image, valid_label, test_image, test_label
+
+    """
+    import random
+    # set random seed
+    random.seed(42)
+
+    # Initialize separate classification lists for training and validation
+    train_classification = []
+    valid_classification = []
+    
+    for i in listdir(train_path):
+        train_classification.append(i)
+
+    for i in listdir(valid_path):
+        valid_classification.append(i)
+
+    if len(train_classification) == 0 or len(valid_classification) == 0:
+        print("No files found in train or valid folders")
+        return None
+
+    for s in train_classification:
+      path_found = len(listdir(f"{train_path}/{s}")) 
+      print(f"{s} : {path_found}") 
+            
+    
+
+    # train path
+    if train_path:
+        # loop through each folder
+        image_data_train = []
+        label_data_train = []
+        
+        if train_balance:
+            min_balance = []
+            for s in train_classification:
+              path_found = len(listdir(f"{train_path}/{s}")) 
+              min_balance.append(path_found)
+
+            # findout minimum value in minimum balance
+            min_balance = min(min_balance)
+            print("min_balance: ",min_balance)
+
+            for train_image_path in train_classification:
+              sfit_path = listdir(train_path + "/" + train_image_path)
+              
+              # print("sfit_path: ",sfit_path)
+              # shufle sfit_path
+              random_shift = random.sample(sfit_path, min_balance)
+              # print("sfit_path: ",random_shift)
+
+              # shufle sfit_path
+              random_shift = random.sample(sfit_path, min_balance)
+              # print("sfit_path: ", random_shift)
+
+              # loop through each randomly shuffled sfit_path only select min_balance
+              for i in range(min_balance):
+                # print("train_image_path: ", random_shift[i])
+                image_data_train.append(train_path + "/" + train_image_path + "/" + random_shift[i])
+                label_data_train.append(train_image_path)
+              
+        
+        else:
+            for train_image_path in train_classification:  
+              for image in listdir(train_path + "/" + train_image_path):
+                
+                image_data_train.append(train_path + "/" + train_image_path + "/" + image)
+                label_data_train.append(train_image_path)
+
+        
+        train_df = pd.DataFrame({
+            'image': image_data_train,
+            'label': label_data_train
+        })
+
+        # How many images are there of each breed?
+        train_df["label"].value_counts().plot.bar(figsize=chart_figure, title=" Train Dataset")
+        plt.show()
+
+        # print dataframe quantity in
+        print(f" For Train Total images: {len(train_df)} and Total labels: {len(train_classification)}")
+
+        # print total quantity of each label
+        # print(train_df["label"].value_counts())
+
+    # for valid path
+    if valid_path:
+        # loop through each folder
+        image_data_valid = []
+        label_data_valid = []
+
+        for valid_image_path in valid_classification:
+            for image in listdir(valid_path + "/" + valid_image_path):
+                image_data_valid.append(valid_path + "/" + valid_image_path + "/" + image)
+                label_data_valid.append(valid_image_path)
+
+        valid_df = pd.DataFrame({
+            'image': image_data_valid,
+            'label': label_data_valid
+        })
+
+        # How many images are there of each breed?
+        valid_df["label"].value_counts().plot.bar(figsize=chart_figure, title=" Valid Dataset")
+        plt.show()
+
+        # print
+        print(f" For Valid Total images: {len(valid_df)} and Total labels: {len(valid_classification)}")
+
+    else:
+        # empty dataframe
+        valid_df = pd.DataFrame({
+            'image': [],
+            'label': []
+        })
+
+    # for test path
+    if test_path:
+        # loop through each folder
+        image_data_test = []
+        label_data_test = []
+
+        for test_image_path in train_classification:
+            for image in listdir(test_path + "/" + test_image_path):
+                image_data_test.append(test_path + "/" + test_image_path + "/" + image)
+                label_data_test.append(test_image_path)
+
+        test_df = pd.DataFrame({
+            'image': image_data_test,
+            'label': label_data_test
+        })
+
+        # How many images are there of each breed?
+        test_df["label"].value_counts().plot.bar(figsize=chart_figure, title="Test Dataset")
+        plt.show()
+
+        print(f" For Test Total images: {len(test_df)} and Total labels: {len(train_classification)}")
+
+    else:
+        # empty dataframe
+        test_df = pd.DataFrame({
+            'image': [],
+            'label': []
+        })
+
+       
+
+    # before process
+    if before_process:
+        # if numpy return True then return X and y in numpy array
+        if numpy_return:
+            return train_classification, train_df['image'].to_numpy(), train_df['label'].to_numpy(), valid_df['image'].to_numpy(), valid_df['label'].to_numpy(), test_df['image'].to_numpy(), test_df['label'].to_numpy()
+        # return data dataframe combine
+        elif main_data_return:
+            return train_classification, train_df, valid_df, test_df
+        # return image and label in dataframe
+        else:
+            return train_classification, train_df['image'], train_df['label'], valid_df['image'], valid_df['label'], test_df['image'], test_df['label']
+
+    # not before process
+    else:
+      # use label hot encoding
+      from sklearn.preprocessing import LabelEncoder
+      label_encoder = LabelEncoder()
+      train_classification = label_encoder.fit(np.array(train_classification))
+
+      train_label = label_encoder.transform(train_df['label'].to_numpy())
+      valid_label = label_encoder.transform(valid_df['label'].to_numpy())
+      test_label = label_encoder.transform(test_df['label'].to_numpy())
+
+      train_data_set = prepare_data_to_tensor(train_df['image'], train_label, batch_size=BATCH_SIZE,IMG_SIZE=IMG_SIZE,rescale=rescale)
+      valid_data_set = prepare_data_to_tensor(valid_df['image'], valid_label, batch_size=BATCH_SIZE,IMG_SIZE=IMG_SIZE,rescale=rescale,valid_data=True)
+      test_data_set = prepare_data_to_tensor(test_df['image'], test_label, batch_size=BATCH_SIZE,IMG_SIZE=IMG_SIZE,rescale=rescale,test_data=True)
+
+      return train_classification , train_data_set, valid_data_set, test_data_set
+
+
+
+
+

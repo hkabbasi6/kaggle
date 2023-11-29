@@ -531,7 +531,7 @@ def make_image_database_from_folder(train_path="",valid_path="",test_path="",com
 
    # not before process
   else:
-    return classification, create_data_batches(train_df['image'], train_df['label'],batch_size=BATCH_SIZE), valid_df['image'], valid_df['label'], test_df['image'], test_df['label'])
+    return classification, create_data_batches(train_df['image'], train_df['label'],batch_size=BATCH_SIZE), valid_df['image'], valid_df['label'], test_df['image'], test_df['label']
 
 
 

@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 # import tensorflow as tf
 import pandas as pd
+import zipfile
 
 # Our function needs a different name to sklearn's plot_confusion_matrix
 def make_confusion_matrix(y_true, y_pred,
@@ -234,6 +235,24 @@ def plot_loss_and_learning_rate(pl_history,pl_model=None,pl_X_test=None, pl_y_te
     pl_model.save(f"{save_path}_{evaluate_data[1]}")
 
     print(f"Model saved to {save_path}_{evaluate_data[1]}")   
+
+
+# uzip file
+def unzip_data(zip_file,uzipath=""):
+  """ Unzip a file. and if unzip path is given then unzip to that path othwerwise unzip to current directory """
+  zip_ref = zipfile.ZipFile(zip_file, 'r')
+  if uzipath != "":
+    zip_ref.extractall(uzipath)
+    print("unzipped to ",uzipath)
+  else:
+    zip_ref.extractall()
+    print("unzipped to current directory")
+  
+  zip_ref.close()
+
+
+
+
 
   
   

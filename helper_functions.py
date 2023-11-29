@@ -91,7 +91,7 @@ def make_confusion_matrix(y_true, y_pred,
 
 
 def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test="", pl_y_test="",tensorflow_dataset=False,
-                                               classes=None,lost_fig_size=(10, 10), figsize=(10, 10),
+                                               classes=None,lost_fig_size=(4, 4), figsize=(10, 10),
                                                text_size=15, norm=True, savefig=False,
                                                save_model=False,save_path=""):
 
@@ -414,7 +414,7 @@ def prepare_data_to_tensor(x, y=None, batch_size=32, valid_data=False, test_data
   
 
 def make_image_database_from_folder(train_path="", valid_path="", test_path="",
-                                    chart_figure=(8,8), comments="", before_process=True, 
+                                    chart_figure=(4,8), comments="", before_process=True, 
                                     numpy_return=False, main_data_return=False, BATCH_SIZE=32,
                                     IMG_SIZE=224,rescale=True,train_balance=False,valid_balance=False):
     """
@@ -448,14 +448,16 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
         print("No files found in train or valid folders")
         return None
 
-    for s in train_classification:
-      path_found = len(listdir(f"{train_path}/{s}")) 
-      print(f"{s} : {path_found}") 
-            
     
 
     # train path
     if train_path:
+      print("train original data: ")
+      for s in train_classification:
+        path_found = len(listdir(f"{train_path}/{s}")) 
+        print(f"{s} : {path_found}") 
+        print()    
+    
         # loop through each folder
         image_data_train = []
         label_data_train = []
@@ -519,6 +521,12 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
         label_data_valid = []
 
         if valid_balance:
+            print("valid original data: ")
+            for s in valid_classification:
+              path_found = len(listdir(f"{valid_path}/{s}")) 
+              print(f"{s} : {path_found}") 
+              print()
+              
             min_balance = []
             for s in valid_classification:
               path_found = len(listdir(f"{valid_path}/{s}")) 

@@ -269,6 +269,9 @@ def unzip_data(zip_file,uzipath=""):
 
 
 
+
+
+
 """ All code below this is main code made by me  """
 
 
@@ -515,10 +518,38 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
         image_data_valid = []
         label_data_valid = []
 
-        for valid_image_path in valid_classification:
+        if valid_balance:
+            min_balance = []
+            for s in valid_classification:
+              path_found = len(listdir(f"{valid_path}/{s}")) 
+              min_balance.append(path_found)
+
+            # findout minimum value in minimum balance
+            min_balance = min(min_balance)
+
+            for valid_image_path in valid_classification:
+              sfit_path = listdir(valid_path + "/" + valid_image_path)
+              
+              # print("sfit_path: ",sfit_path)
+              # shufle sfit_path
+              random_shift = random.sample(sfit_path, min_balance)
+              # print("sfit_path: ",random_shift)
+
+              # shufle sfit_path
+              random_shift = random.sample(sfit_path, min_balance)
+
+              # loop through each randomly shuffled sfit_path only select min_balance
+              for i in range(min_balance):
+                # print("valid_image_path: ", random_shift[i])
+                image_data_valid.append(valid_path + "/" + valid_image_path + "/" + random_shift[i])
+                label_data_valid.append(valid_image_path)
+
+        else:
+          for valid_image_path in valid_classification:
             for image in listdir(valid_path + "/" + valid_image_path):
                 image_data_valid.append(valid_path + "/" + valid_image_path + "/" + image)
                 label_data_valid.append(valid_image_path)
+
 
         valid_df = pd.DataFrame({
             'image': image_data_valid,
@@ -567,7 +598,6 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
             'image': [],
             'label': []
         })
-
        
 
     # before process
@@ -598,8 +628,4 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
       test_data_set = prepare_data_to_tensor(test_df['image'], test_label, batch_size=BATCH_SIZE,IMG_SIZE=IMG_SIZE,rescale=rescale,test_data=True)
 
       return train_classification , train_data_set, valid_data_set, test_data_set
-
-
-
-
 

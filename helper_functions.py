@@ -91,16 +91,16 @@ def make_confusion_matrix(y_true, y_pred,
 
 
 
-def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test="", pl_y_test="",tensorflow_dataset=False, 
-                                               classes=None,lost_fig_size=(10, 10), figsize=(10, 10), 
+def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test="", pl_y_test="",tensorflow_dataset=False,
+                                               classes=None,lost_fig_size=(10, 10), figsize=(10, 10),
                                                text_size=15, norm=True, savefig=False,
                                                save_model=False,save_path=""):
-  
+
   """ Make skelearn report with loass and accuracy plot with learning rate if preset
   and confusion matrix and loss history also showing higest validation accuracy against learning rate also
   option to save model and confusion matrix to file, if tensorflow dataset is used yhen X_test assume that
    batch size is X_test position
-  
+
   Arug:
     model: model
     pl_history: history of model
@@ -151,9 +151,9 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
     model.save(f"{save_path}_{round((evaluate_data[1]),2)}")
 
     print(f"Model saved to {save_path}_{round((evaluate_data[1]),2)}")
-    print() 
+    print()
 
-  # try if learning rate 
+  # try if learning rate
   try :
     if pl_history.history['lr']:
       learing_data = pd.DataFrame(pl_history.history)
@@ -167,18 +167,18 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
       print()
 
   except:
-    pass    
-  
+    pass
+
 
   if classes:
     print(classification_report(pl_y_test, pl_y_pred > 0.5,target_names=classes))
   else:
-    print(classification_report(pl_y_test, pl_y_pred > 0.5))  
-  
+    print(classification_report(pl_y_test, pl_y_pred > 0.5))
+
   print()
 
   # plot loss history
-  
+
   plt.figure(figsize=lost_fig_size)
   plt.subplot(2, 1, 1)
   plt.plot(pl_history.history['loss'])
@@ -198,16 +198,16 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
   plt.legend(['train', 'val'], loc='upper left')
 
   plt.show()
- 
+
   # make confusion matrix
   make_confusion_matrix(pl_y_test, pl_y_pred > 0.5, classes=classes, figsize=figsize, text_size=text_size, norm=norm, savefig=savefig)
 
 
-# function to plot loss and 
+# function to plot loss and
 def plot_loss_and_learning_rate(pl_history,pl_model=None,pl_X_test=None, pl_y_test=None,save_model=False,save_path=""):
 
   """ plot loss and learning rate if preset for not categorical model
-      able to save model in specific path give evaluated data to and show 5 best learning rate 
+      able to save model in specific path give evaluated data to and show 5 best learning rate
 
     Arug:
     pl_history: history of model
@@ -217,17 +217,17 @@ def plot_loss_and_learning_rate(pl_history,pl_model=None,pl_X_test=None, pl_y_te
     pl_X_test: test data input (default=None)
     pl_y_test: test data output (default=None)
     """
-  
+
   # plot loss history
   plt.figure(figsize=(10, 10))
-  
+
   plt.plot(pl_history.history['loss'])
   plt.plot(pl_history.history['val_loss'])
   plt.title('model loss')
   plt.ylabel('loss')
   plt.xlabel('epoch')
   plt.legend(['train', 'val'], loc='upper left')
-  
+
   # try if learning rate
   try :
     if pl_history.history['lr']:
@@ -245,13 +245,13 @@ def plot_loss_and_learning_rate(pl_history,pl_model=None,pl_X_test=None, pl_y_te
     pass
 
   if pl_model and pl_X_test and pl_y_test:
-    evaluate_data =  pl_model.evaluate(pl_X_test, pl_y_test) 
-  
+    evaluate_data =  pl_model.evaluate(pl_X_test, pl_y_test)
+
   # Save model
   if save_model and pl_model:
     pl_model.save(f"{save_path}_{evaluate_data[1]}")
 
-    print(f"Model saved to {save_path}_{evaluate_data[1]}")   
+    print(f"Model saved to {save_path}_{evaluate_data[1]}")
 
 
 # uzip file
@@ -264,7 +264,7 @@ def unzip_data(zip_file,uzipath=""):
   else:
     zip_ref.extractall()
     print("unzipped to current directory")
-  
+
   zip_ref.close()
 
 
@@ -282,9 +282,9 @@ import numpy as np
 
 def prpeare_data_from_folder(main_path,main_data_return=True,numpy_return=False,commits=""):
   """ Collect image and label from folder then create dataframe for X and y
-  
+
   Args:
-    main_path: path to folder in which image and label are prsent 
+    main_path: path to folder in which image and label are prsent
     main_data_return: return dataframe with image and label
     numpy_return: return numpy array with seperate image and label
     commits: commits in which data is collected (default="") can be traning or testing or validation
@@ -327,7 +327,7 @@ def prpeare_data_from_folder(main_path,main_data_return=True,numpy_return=False,
 
 
 
-def process_image(image_path,IMG_SIZE=224):
+def process_image(image_path,IMG_SIZE=224,rescale=True):
   """
   Takes an image from file path convert into 3 colour channel tensor then resize it and return .
   """
@@ -336,7 +336,8 @@ def process_image(image_path,IMG_SIZE=224):
   # Turn the jpeg image into numerical Tensor with 3 colour channels (Red, Green, Blue)
   image = tf.image.decode_jpeg(image, channels=3)
   # Convert the colour channel values from 0-225 values to 0-1 values
-  image = tf.image.convert_image_dtype(image, tf.float32)
+  if rescale:
+    image = tf.image.convert_image_dtype(image, tf.float32)
   # Resize the image to our desired size (224, 244)
   image = tf.image.resize(image, size=[IMG_SIZE, IMG_SIZE])
   return image
@@ -399,10 +400,21 @@ def create_data_batches(x, y=None, batch_size=BATCH_SIZE, valid_data=False, test
 
 
 
-# make function to collect image and label data from dictonary 
-def make_image_database_from_folder(train_path="",valid_path="",test_path="",comments="",numpy_return=False,main_data_return=False):
+# make function to collect image and label data from dictonary
+def make_image_database_from_folder(train_path="",valid_path="",test_path="",comments=""
+,before_process=True,numpy_return=False,main_data_return=False,BATCH_SIZE=32):
   """
   Takes a folder path and returns a tuple of (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
+
+  returns
+   numpy array:
+    return calssfication and tuple of (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
+
+   main dataframe:
+    return calssfication and pandas data frame (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
+   else:
+    return classification and partially train_image , train_label, valid_image, valid_label, test_image, test_label
+
   """
   classification = []
   for i in listdir(train_path):
@@ -412,8 +424,9 @@ def make_image_database_from_folder(train_path="",valid_path="",test_path="",com
 
   if len(classification) == 0:
     print("No files found in train folder")
-    break  
-  
+    return None
+
+
   # train path
   if train_path:
     # loop through each folder
@@ -424,7 +437,21 @@ def make_image_database_from_folder(train_path="",valid_path="",test_path="",com
       for image in listdir(train_path+"/"+train_image_path):
         image_data_train.append(train_path+"/"+train_image_path+"/"+image)
         label_data_train.append(train_path)
-  
+
+    train_df = pd.DataFrame({
+
+    'image': image_data_train,
+    'label' : label_data_train
+
+    })
+
+    # How many images are there of each breed?
+    train_df["label"].value_counts().plot.bar(figsize=(20, 10)).title(" Train Dataset");
+
+    # print dataframe quantity in
+    print(f" For Train Total images: {len(train_df)} and Total labels: {len(classification)}")
+    
+
   # for valid path
   if valid_path:
      # loop through each folder
@@ -436,8 +463,28 @@ def make_image_database_from_folder(train_path="",valid_path="",test_path="",com
         for image in listdir(valid_path+"/"+valid_image_path):
           image_data_valid.append(valid_path+"/"+valid_image_path+"/"+image)
           label_data_valid.append(valid_path)
+
+        valid_df = pd.DataFrame({
+          'image' : image_data_valid,
+         'label' : label_data_valid
+           })
+        
+        # How many images are there of each breed?
+        valid_df["label"].value_counts().plot.bar(figsize=(20, 10)).title(" Valid Dataset");
+
+        # print
+        print(f" For Valid Total images: {len(valid_df)} and Total labels: {len(classification)}")
+        
       except:
         print(f"No folder {valid_image_path} found")
+
+        # empty dataframe
+        valid_df = pd.DataFrame({
+          
+          'image' : [],
+          'label' : []
+
+        })
 
    # for test path
   if test_path:
@@ -450,46 +497,42 @@ def make_image_database_from_folder(train_path="",valid_path="",test_path="",com
         for image in listdir(test_path+"/"+test_image_path):
           image_data_test.append(test_path+"/"+test_image_path+"/"+image)
           label_data_test.append(test_path)
+  
+        test_df = pd.DataFrame({
+          'image' : image_data_test,
+          'label' : label_data_test
+           })
+        
+        # How many images are there of each breed?
+        test_df["label"].value_counts().plot.bar(figsize=(20, 10)).title(" Test Dataset");
+
+        print(f" For Test Total images: {len(test_df)} and Total labels: {len(classification)}")  
       except:
-        print(f"No folder {test_image_path} found")               
- 
-    train_df = pd.DataFrame({
+        print(f"No folder {test_image_path} found")
 
-    'image': image_data_train,
-    'label' : label_data_train
+        # empty dataframe
+        test_df = pd.DataFrame({
+          
+          'image' : [],
+          'label' : []
+        })
+   
+  # before process
+  if before_process:
+    # if numpy return True then return X and y in numpy array
+    if numpy_return:
+      return classification, train_df['image'].to_numpy(), train_df['label'].to_numpy(), valid_df['image'].to_numpy(), valid_df['label'].to_numpy(), test_df['image'].to_numpy(), test_df['label'].to_numpy()
+    # return data dataframe combine
+    elif main_data_return:
+      return classification, train_df, valid_df, test_df
+    # return image and label in dataframe
+    else:
+      return classification, train_df['image'], train_df['label'], valid_df['image'], valid_df['label'], test_df['image'], test_df['label']
 
-    })
-
-    # print dataframe quantity in
-    print(f" For Train Total images: {len(train_df)} and Total labels: {len(classification)}")
-
-  if valid_path:
-    valid_df = pd.DataFrame({
-        
-        df['image'] = image_data_valid
-        df['label'] = label_data_valid
-         })
-    
-    # print
-    print(f" For Valid Total images: {len(valid_df)} and Total labels: {len(classification)}")
-    
-  if test_path:
-    test_df = pd.DataFrame({
-        
-        df['image'] = image_data_test
-        df['label'] = label_data_test
-         })
-    print(f" For Test Total images: {len(test_df)} and Total labels: {len(classification)}")     
-
-
-  # if numpy return True then return X and y in numpy array
-  if numpy_return:
-    return train_df['image'].to_numpy(), train_df['label'].to_numpy(), valid_df['image'].to_numpy(), valid_df['label'].to_numpy(), test_df['image'].to_numpy(), test_df['label'].to_numpy()
-  # return data dataframe combine
-  elif main_data_return:
-    return train_df, valid_df, test_df
-  # return image and label in dataframe
+   # not before process
   else:
-    return train_df['image'], train_df['label'], valid_df['image'], valid_df['label'], test_df['image'], test_df['label']
+    return classification, create_data_batches(train_df['image'], train_df['label'],batch_size=BATCH_SIZE), valid_df['image'], valid_df['label'], test_df['image'], test_df['label'])
+
+
 
 

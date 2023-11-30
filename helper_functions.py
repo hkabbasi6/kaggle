@@ -692,3 +692,24 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
 
         # return data with classification and transform train, valid and last it test in numpy array Image and Label
         return train_classification, train_data_set, valid_data_set, test_data_set[0], test_data_set[1]
+
+
+def tensorflow_batch_to_evalauate(tensor_data):
+    """
+    Convert batch tensorflow tensor data to numpy array for evaluate
+
+    Args:
+        tensor_data (tf.data): tensorflow data
+
+    Returns:
+        np.array: numpy array of image and label    
+    """
+    # Extract the features and labels from the test dataset
+    test_images, test_labels = zip(*tensor_data)
+
+    # Convert the lists to NumPy arrays
+    test_images = np.array(test_images)
+    test_labels = np.array(test_labels)
+
+    return test_images, test_labels       
+

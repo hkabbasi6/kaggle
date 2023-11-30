@@ -270,8 +270,6 @@ def unzip_data(zip_file,uzipath=""):
 
 
 
-
-
 """ All code below this is main code made by me  """
 
 
@@ -331,18 +329,13 @@ def prpeare_data_from_folder(main_path,main_data_return=True,numpy_return=False,
 
 
 
-
-
-  
-  
-
 # preperforning data into tensor
 def prepare_data_to_tensor(x, y=None, batch_size=32, valid_data=False, test_data=False,
                         IMG_SIZE=224,rescale=True):
-  
+
   def process_image(image_path):
-                
-                  
+
+
     """
     Takes an image from file path convert into 3 colour channel tensor then resize it and return .
     """
@@ -383,7 +376,17 @@ def prepare_data_to_tensor(x, y=None, batch_size=32, valid_data=False, test_data
     data = tf.data.Dataset.from_tensor_slices((tf.constant(x), # filepaths
                                                tf.constant(y))) # labels
     data_batch = data.map(get_image_label)
-    return data_batch
+
+    # Batch and prefetch the data
+    batch_size = len(x)  # Set batch size to the number of test samples
+    data_batch = data_batch.batch(batch_size).prefetch(buffer_size=tf.data.AUTOTUNE)
+
+    # Extract features and labels
+    test_images, test_labels = next(iter(data_batch))
+
+    return np.array(test_images), np.array(test_labels)
+        
+   
 
   # If the data if a valid dataset, we don't need to shuffle it
   elif valid_data:
@@ -410,24 +413,43 @@ def prepare_data_to_tensor(x, y=None, batch_size=32, valid_data=False, test_data
     data_batch = data.batch(batch_size ).prefetch(buffer_size=AUTOTUNE)
   return data_batch
 
-  
-  
+
+
 
 def make_image_database_from_folder(train_path="", valid_path="", test_path="",
-                                    chart_figure=(4,8), comments="", before_process=True, 
+                                    chart_figure=(4, 8), before_process=True,
                                     numpy_return=False, main_data_return=False, BATCH_SIZE=32,
-                                    IMG_SIZE=224,rescale=True,train_balance=False,valid_balance=False):
+                                    IMG_SIZE=224, rescale=True, train_balance=False, valid_balance=False,
+                                    train_percent=1.0, valid_percent=1.0):
     """
-    Takes a folder path and returns a tuple of (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
+        Convert image and label from folder then create dataframe for X and y and if before_process True then
+        return dataset else return X and y
 
-    returns
-    numpy array:
-    return calssfication and tuple of (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
+        Args:
+            train_path: path of train folder
+            valid_path: path of valid folder
+            test_path: path of test folder
+            chart_figure: figure size for chart showing dataset
+            before_process: if True then return dataset else return X and y
+            numpy_return: if True then return X and y in numpy array
+            main_data_return: if True then return dataframe
+            BATCH_SIZE: batch size
+            IMG_SIZE: image size
+            rescale: if True then rescale image
+            train_balance: if True then balance train data
+            valid_balance: if True then balance valid data
+            train_percent: percentage of train data to reduce if less than 1
+            valid_percent: percentage of valid data to reduce if less than 1
 
-    main dataframe:
-    return calssfication and pandas data frame (train_image, train_label), (valid_image, valid_label), (test_image, test_label)
-    else:
-    return classification and partially train_image, train_label, valid_image, valid_label, test_image, test_label
+        return:
+            if before_process is True then return dataset else return X and y
+            if main_data_return is True then return dataframe
+            if numpy_return is True then return X and y in numpy array
+
+        example:
+               if before_process is True:
+                return classfication data , train data tensor, valid data tensor ,and in Numpy array of Image and label
+           
 
     """
     import random
@@ -437,7 +459,7 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
     # Initialize separate classification lists for training and validation
     train_classification = []
     valid_classification = []
-    
+
     for i in listdir(train_path):
         train_classification.append(i)
 
@@ -448,57 +470,67 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
         print("No files found in train or valid folders")
         return None
 
-    
-
     # train path
     if train_path:
-      print("train original data: ")
-      for s in train_classification:
-        path_found = len(listdir(f"{train_path}/{s}")) 
-        print(f"{s} : {path_found}") 
-        print()    
-    
-        # loop through each folder
+        print("train original data: ")
+        for s in train_classification:
+            path_found = len(listdir(f"{train_path}/{s}"))
+            print(f"{s} : {path_found}")
+        print()
+
+        # Empty lists
         image_data_train = []
         label_data_train = []
-        
+
         if train_balance:
+        # loop through each folder quantity and find out min value quantity
             min_balance = []
             for s in train_classification:
-              path_found = len(listdir(f"{train_path}/{s}")) 
-              min_balance.append(path_found)
+                path_found = len(listdir(f"{train_path}/{s}"))
+                min_balance.append(path_found)
 
-            # findout minimum value in minimum balance
-            min_balance = min(min_balance)
-            print("min_balance: ",min_balance)
+            # find out minimum value in minimum balance
+            min_balance_value = min(min_balance)
+            print("min_balance: ", min_balance_value)
 
             for train_image_path in train_classification:
-              sfit_path = listdir(train_path + "/" + train_image_path)
-              
-              # print("sfit_path: ",sfit_path)
-              # shufle sfit_path
-              random_shift = random.sample(sfit_path, min_balance)
-              # print("sfit_path: ",random_shift)
+                sfit_path = listdir(train_path + "/" + train_image_path)
 
-              # shufle sfit_path
-              random_shift = random.sample(sfit_path, min_balance)
-              # print("sfit_path: ", random_shift)
+                # loop through each randomly shuffled sfit_path
+                random_shift = random.sample(sfit_path, min_balance_value)
 
-              # loop through each randomly shuffled sfit_path only select min_balance
-              for i in range(min_balance):
-                # print("train_image_path: ", random_shift[i])
-                image_data_train.append(train_path + "/" + train_image_path + "/" + random_shift[i])
-                label_data_train.append(train_image_path)
-              
-        
+                 # if train_percent < 1.0 then *train_percent round to integer
+                if train_percent < 1.0:
+                # *train_percent round to integer if train_percent < 1.0
+                    min_balance_adjusted = int(min_balance_value * train_percent)
+
+                    # loop through each randomly shuffled sfit_path only select min_balance_adjusted
+                    for i in range(min_balance_adjusted):
+                        image_data_train.append(train_path + "/" + train_image_path + "/" + random_shift[i])
+                        label_data_train.append(train_image_path)
+                else:
+                    # loop through each randomly shuffled sfit_path only select min_balance_value
+                    for i in range(min_balance_value):
+                        image_data_train.append(train_path + "/" + train_image_path + "/" + random_shift[i])
+                        label_data_train.append(train_image_path)
+
         else:
-            for train_image_path in train_classification:  
-              for image in listdir(train_path + "/" + train_image_path):
-                
-                image_data_train.append(train_path + "/" + train_image_path + "/" + image)
-                label_data_train.append(train_image_path)
+            for train_image_path in train_classification:
+                # if train_percent < 1.0 then *train_percent round to integer
+                if train_percent < 1.0:
+                    min_balance = int(len(listdir(train_path + "/" + train_image_path)) * train_percent)
 
-        
+                    # loop through each randomly shuffled sfit_path only select min_balance but first shuffle sfit_path
+                    train_shift_path = random.sample(listdir(train_path + "/" + train_image_path), min_balance)
+
+                    for i in range(min_balance):
+                        image_data_train.append(train_path + "/" + train_image_path + "/" + listdir(train_path + "/" + train_image_path)[i])
+                        label_data_train.append(train_image_path)
+                else:
+                    for image in listdir(train_path + "/" + train_image_path):
+                        image_data_train.append(train_path + "/" + train_image_path + "/" + image)
+                        label_data_train.append(train_image_path)
+
         train_df = pd.DataFrame({
             'image': image_data_train,
             'label': label_data_train
@@ -516,49 +548,69 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
 
     # for valid path
     if valid_path:
+        print("valid original data: ")
+        for s in valid_classification:
+            path_found = len(listdir(f"{valid_path}/{s}"))
+            print(f"{s} : {path_found}")
+        print()
+
         # loop through each folder
         image_data_valid = []
         label_data_valid = []
 
         if valid_balance:
-            print("valid original data: ")
-            for s in valid_classification:
-              path_found = len(listdir(f"{valid_path}/{s}")) 
-              print(f"{s} : {path_found}") 
-              print()
-              
             min_balance = []
             for s in valid_classification:
-              path_found = len(listdir(f"{valid_path}/{s}")) 
-              min_balance.append(path_found)
+               path_found = len(listdir(f"{valid_path}/{s}"))
+               min_balance.append(path_found)
 
-            # findout minimum value in minimum balance
-            min_balance = min(min_balance)
+            # find out minimum value in minimum balance
+            min_balance_value = min(min_balance)
 
             for valid_image_path in valid_classification:
-              sfit_path = listdir(valid_path + "/" + valid_image_path)
-              
-              # print("sfit_path: ",sfit_path)
-              # shufle sfit_path
-              random_shift = random.sample(sfit_path, min_balance)
-              # print("sfit_path: ",random_shift)
+                sfit_path = listdir(valid_path + "/" + valid_image_path)
 
-              # shufle sfit_path
-              random_shift = random.sample(sfit_path, min_balance)
+                # shuffle sfit_path
+                random_shift = random.sample(sfit_path, min_balance_value)
+                # print("sfit_path: ",random_shift)
 
-              # loop through each randomly shuffled sfit_path only select min_balance
-              for i in range(min_balance):
-                # print("valid_image_path: ", random_shift[i])
-                image_data_valid.append(valid_path + "/" + valid_image_path + "/" + random_shift[i])
-                label_data_valid.append(valid_image_path)
+                # if valid_percent < 1.0 then *valid_percent round to integer
+                if valid_percent < 1.0:
+                # *valid_percent round to integer if valid_percent < 1.0
+                    min_balance_adjusted = int(min_balance_value * valid_percent)
 
+                    # loop through each randomly shuffled sfit_path only select min_balance_adjusted
+                    for i in range(min_balance_adjusted):
+                        # print("valid_image_path: ", random_shift[i])
+                        image_data_valid.append(valid_path + "/" + valid_image_path + "/" + random_shift[i])
+                        label_data_valid.append(valid_image_path)
+                else:
+                    # loop through each randomly shuffled sfit_path only select min_balance_value
+                    for i in range(min_balance_value):
+                       # print("valid_image_path: ", random_shift[i])
+                       image_data_valid.append(valid_path + "/" + valid_image_path + "/" + random_shift[i])
+                       label_data_valid.append(valid_image_path)
+        
         else:
-          for valid_image_path in valid_classification:
-            for image in listdir(valid_path + "/" + valid_image_path):
-                image_data_valid.append(valid_path + "/" + valid_image_path + "/" + image)
-                label_data_valid.append(valid_image_path)
+            for valid_image_path in valid_classification:
 
+                if valid_percent < 1.0:
+                    min_balance = int(len(listdir(valid_path + "/" + valid_image_path)) * valid_percent)
 
+                    # loop through each randomly shuffled sfit_path only select min_balance but first shuffle sfit_path
+                    valid_shift_path = random.sample(listdir(valid_path + "/" + valid_image_path), min_balance)
+
+                    # loop through each randomly shuffled sfit_path minimum balance quantity
+                    for i in range(min_balance):
+                        image_data_valid.append(valid_path + "/" + valid_image_path + "/" + listdir(valid_path + "/" + valid_image_path)[i])
+                        label_data_valid.append(valid_image_path)
+                else:
+                    # if valid_percent == 1.0 then select all
+                    for image in listdir(valid_path + "/" + valid_image_path):
+                        image_data_valid.append(valid_path + "/" + valid_image_path + "/" + image)
+                        label_data_valid.append(valid_image_path)
+
+        # create dataframe for valid
         valid_df = pd.DataFrame({
             'image': image_data_valid,
             'label': label_data_valid
@@ -572,7 +624,7 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
         print(f" For Valid Total images: {len(valid_df)} and Total labels: {len(valid_classification)}")
 
     else:
-        # empty dataframe
+        # empty dataframe because no valid path
         valid_df = pd.DataFrame({
             'image': [],
             'label': []
@@ -606,7 +658,6 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
             'image': [],
             'label': []
         })
-       
 
     # before process
     if before_process:
@@ -622,18 +673,22 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
 
     # not before process
     else:
-      # use label hot encoding
-      from sklearn.preprocessing import LabelEncoder
-      label_encoder = LabelEncoder()
-      train_classification = label_encoder.fit(np.array(train_classification))
+        # use label hot encoding
+        from sklearn.preprocessing import LabelEncoder
 
-      train_label = label_encoder.transform(train_df['label'].to_numpy())
-      valid_label = label_encoder.transform(valid_df['label'].to_numpy())
-      test_label = label_encoder.transform(test_df['label'].to_numpy())
+        label_encoder = LabelEncoder()
+        # Fit the labels into a one-hot encoding so it can be used in the data
+        train_classification = label_encoder.fit(np.array(train_classification))
 
-      train_data_set = prepare_data_to_tensor(train_df['image'], train_label, batch_size=BATCH_SIZE,IMG_SIZE=IMG_SIZE,rescale=rescale)
-      valid_data_set = prepare_data_to_tensor(valid_df['image'], valid_label, batch_size=BATCH_SIZE,IMG_SIZE=IMG_SIZE,rescale=rescale,valid_data=True)
-      test_data_set = prepare_data_to_tensor(test_df['image'], test_label, batch_size=BATCH_SIZE,IMG_SIZE=IMG_SIZE,rescale=rescale,test_data=True)
+        # Transform the labels into a one-hot encoding
+        train_label = label_encoder.transform(train_df['label'].to_numpy())
+        valid_label = label_encoder.transform(valid_df['label'].to_numpy())
+        test_label = label_encoder.transform(test_df['label'].to_numpy())
 
-      return train_classification , train_data_set, valid_data_set, test_data_set
+        # prepare data to tensor with batch size, image size and rescale or not
+        train_data_set = prepare_data_to_tensor(train_df['image'], train_label, batch_size=BATCH_SIZE, IMG_SIZE=IMG_SIZE, rescale=rescale)
+        valid_data_set = prepare_data_to_tensor(valid_df['image'], valid_label, batch_size=BATCH_SIZE, IMG_SIZE=IMG_SIZE, rescale=rescale, valid_data=True)
+        test_data_set = prepare_data_to_tensor(test_df['image'], test_label, batch_size=BATCH_SIZE, IMG_SIZE=IMG_SIZE, rescale=rescale, test_data=True)
 
+        # return data with classification and transform train, valid and last it test in numpy array Image and Label
+        return train_classification, train_data_set, valid_data_set, test_data_set[0], test_data_set[1]

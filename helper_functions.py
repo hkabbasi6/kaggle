@@ -414,13 +414,31 @@ def prepare_data_to_tensor(x, y=None, batch_size=32, valid_data=False, test_data
   return data_batch
 
 
+def tensorflow_batch_to_evalauate(tensor_data):
+    """
+    Convert batch tensorflow tensor data to numpy array for evaluate
 
+    Args:
+        tensor_data (tf.data): tensorflow data
+
+    Returns:
+        np.array: numpy array of image and label    
+    """
+    # Extract the features and labels from the test dataset
+    test_images, test_labels = zip(*tensor_data)
+
+    # Convert the lists to NumPy arrays
+    test_images = np.array(test_images)
+    test_labels = np.array(test_labels)
+
+    return test_images, test_labels       
 
 def make_image_database_from_folder(train_path="", valid_path="", test_path="",
                                     chart_figure=(4, 8), before_process=True,
                                     numpy_return=False, main_data_return=False, BATCH_SIZE=32,
                                     IMG_SIZE=224, rescale=True, train_balance=False, valid_balance=False,
-                                    train_percent=1.0, valid_percent=1.0):
+                                    train_percent=1.0, valid_percent=1.0,
+                                    true_false_output=False):
     """
         Convert image and label from folder then create dataframe for X and y and if before_process True then
         return dataset else return X and y
@@ -440,6 +458,7 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
             valid_balance: if True then balance valid data
             train_percent: percentage of train data to reduce if less than 1
             valid_percent: percentage of valid data to reduce if less than 1
+            tue_flase_output: if True then return True or False number array
 
         return:
             if before_process is True then return dataset else return X and y
@@ -449,7 +468,7 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
         example:
                if before_process is True:
                 return classfication data , train data tensor, valid data tensor ,and in Numpy array of Image and label
-           
+
 
     """
     import random
@@ -590,7 +609,7 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
                        # print("valid_image_path: ", random_shift[i])
                        image_data_valid.append(valid_path + "/" + valid_image_path + "/" + random_shift[i])
                        label_data_valid.append(valid_image_path)
-        
+
         else:
             for valid_image_path in valid_classification:
 
@@ -673,18 +692,26 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
 
     # not before process
     else:
-        # use label hot encoding
-        from sklearn.preprocessing import LabelEncoder
+        if true_false_output:
+            unique = np.unique(train_classification)
 
-        label_encoder = LabelEncoder()
-        # Fit the labels into a one-hot encoding so it can be used in the data
-        train_classification = label_encoder.fit(np.array(train_classification))
+            train_label = [ label_class == np.array(unique) for label_class in train_df['label'].to_numpy()]
+            valid_label = [ label_class == np.array(unique) for label_class in valid_df['label'].to_numpy()]
+            test_label = [ label_class == np.array(unique) for label_class in test_df['label'].to_numpy()]
 
-        # Transform the labels into a one-hot encoding
-        train_label = label_encoder.transform(train_df['label'].to_numpy())
-        valid_label = label_encoder.transform(valid_df['label'].to_numpy())
-        test_label = label_encoder.transform(test_df['label'].to_numpy())
+        else:
+           # use label hot encoding
+           from sklearn.preprocessing import LabelEncoder
 
+           label_encoder = LabelEncoder()
+           # Fit the labels into a one-hot encoding so it can be used in the data
+           train_classification = label_encoder.fit(np.array(train_classification))
+
+           # Transform the labels into a one-hot encoding
+           train_label = label_encoder.transform(train_df['label'].to_numpy())
+           valid_label = label_encoder.transform(valid_df['label'].to_numpy())
+           test_label = label_encoder.transform(test_df['label'].to_numpy())
+           
         # prepare data to tensor with batch size, image size and rescale or not
         train_data_set = prepare_data_to_tensor(train_df['image'], train_label, batch_size=BATCH_SIZE, IMG_SIZE=IMG_SIZE, rescale=rescale)
         valid_data_set = prepare_data_to_tensor(valid_df['image'], valid_label, batch_size=BATCH_SIZE, IMG_SIZE=IMG_SIZE, rescale=rescale, valid_data=True)
@@ -692,24 +719,4 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
 
         # return data with classification and transform train, valid and last it test in numpy array Image and Label
         return train_classification, train_data_set, valid_data_set, test_data_set[0], test_data_set[1]
-
-
-def tensorflow_batch_to_evalauate(tensor_data):
-    """
-    Convert batch tensorflow tensor data to numpy array for evaluate
-
-    Args:
-        tensor_data (tf.data): tensorflow data
-
-    Returns:
-        np.array: numpy array of image and label    
-    """
-    # Extract the features and labels from the test dataset
-    test_images, test_labels = zip(*tensor_data)
-
-    # Convert the lists to NumPy arrays
-    test_images = np.array(test_images)
-    test_labels = np.array(test_labels)
-
-    return test_images, test_labels       
 

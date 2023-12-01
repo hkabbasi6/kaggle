@@ -431,7 +431,18 @@ def tensorflow_batch_to_evalauate(tensor_data):
     test_images = np.array(test_images)
     test_labels = np.array(test_labels)
 
-    return test_images, test_labels       
+    return test_images, test_labels    
+
+# set kaggle api token
+def kaggle_api_token_for_colab(path="/content/drive/MyDrive/kaggle_api_file/kaggle.json"):
+  """ Set kaggle api from /content/drive/MyDrive/kaggle_api_file/kaggle.json """
+  
+    # Replace '/content/drive/your/path/to/kaggle.json' with the actual path to your kaggle.json file
+    !cp /content/drive/MyDrive/kaggle_api_file/kaggle.json ~/.kaggle/
+    !chmod 600 ~/.kaggle/kaggle.json
+    
+    print("Kaggle API token copied to ~/.kaggle/kaggle.json")
+    
 
 def make_image_database_from_folder(train_path="", valid_path="", test_path="",
                                     chart_figure=(4, 8), before_process=True,

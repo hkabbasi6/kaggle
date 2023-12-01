@@ -431,7 +431,80 @@ def tensorflow_batch_to_evalauate(tensor_data):
     test_images = np.array(test_images)
     test_labels = np.array(test_labels)
 
-    return test_images, test_labels    
+    return test_images, test_labels
+
+
+import pandas as pd
+
+def transform_dataframe_into_train(data, target, balance_df=True, split=0.2):
+    """
+    transform dataframe into train and test with split proportion with class balance
+
+    Arg:
+      df: dataframe
+      target: target column
+      balance_df: if True, balance dataframe based on target column values and sample with replacement based on min value in target
+      split: proportion of train data
+    Return:
+      train_x: train features
+      train_y: train target
+      test_x: test features
+      test_y: test target
+      
+    """
+    df = data.copy()
+
+    # Shuffle the dataframe
+    df = df.sample(frac=1).reset_index(drop=True)
+
+    # print how many tota sample are in data then also print how many samples in each class
+    print("Total samples",df.shape[0])
+    print(df[target].value_counts())
+
+    
+    if balance_df:
+        # Balance dataframe based on target column values and sample with replacement based on min value in target
+        df = df.groupby(target).apply(lambda x: x.sample(df[target].value_counts().min(), replace=True)).reset_index(drop=True)
+        
+        # print how many samples in each class
+        print("Balance set",df[target].value_counts())
+
+    # Split dataframe into train and valid
+    train_size = 1 - split
+    train_dfs, valid_dfs = [], []
+
+    for _, group_df in df.groupby(target):
+        group_size = len(group_df)
+        group_train_size = int(group_size * train_size)
+
+        # Split each group into train and valid proportionally
+        train_df = group_df.head(group_train_size)
+        valid_df = group_df.tail(group_size - group_train_size)
+
+        train_dfs.append(train_df)
+        valid_dfs.append(valid_df)
+
+    # Concatenate the dataframes for train and valid sets
+    df_train = pd.concat(train_dfs).sample(frac=1).reset_index(drop=True)
+    df_valid = pd.concat(valid_dfs).sample(frac=1).reset_index(drop=True)
+
+    # shaufle df
+    df_train = shuffle(df_train, random_state=42)
+    df_valid = shuffle(df_valid, random_state=42)
+
+    # split into train_x and train_y
+    train_x = df_train.drop(target, axis=1)
+    train_y = df_train[target]
+
+    # split into valid_x and valid_y
+    valid_x = df_valid.drop(target, axis=1)
+    valid_y = df_valid[target]
+
+    # print how many samples in each set
+    print("Return train \n",df_train[target].value_counts())
+    print("Return valid \n",df_valid[target].value_counts())
+
+    return train_x, train_y, valid_x, valid_y
 
 
 

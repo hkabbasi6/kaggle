@@ -795,3 +795,34 @@ def make_image_database_from_folder(train_path="", valid_path="", test_path="",
         # return data with classification and transform train, valid and last it test in numpy array Image and Label
         return train_classification, train_data_set, valid_data_set, test_data_set[0], test_data_set[1]
 
+
+def transform_dataframe(data,target,balance_df=True,split=0.2):
+  """
+  transform datefraem data into train and valid also balance if split also equaly split class in target
+  df: dataframe
+  target: target column
+  """
+  df = data.copy()
+  if balance_df:
+    # balance dataframe based on target column values and sample with replacement based on min value in target
+    df = df.groupby(target).apply(lambda x: x.sample(df[target].value_counts().min(), replace=True)).reset_index(drop=True)
+
+    # how many samples in each class
+    target_counts = df[target].value_counts()
+
+    # create mltiple dataframe of each class named d
+    dfs = []
+    for i in range(len(target_counts)):
+      d = df[df[target] == target_counts.index[i]]
+      dfs.append(d)
+
+    # split dataframe into train and test
+    for i in range(len(dfs)):
+      dfs[i] = dfs[i].sample(frac=1-split).reset_index(drop=True)
+    df = pd.concat(dfs)
+
+    # valid set
+    df_valid = df.sample(frac=0.2).reset_index(drop=True)
+    df = df.drop(df_valid.index).reset_index(drop=True)
+
+  return df

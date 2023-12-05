@@ -436,75 +436,87 @@ def tensorflow_batch_to_evalauate(tensor_data):
 
 import pandas as pd
 
+import pandas as pd
+
 def transform_dataframe_into_train(data, target, balance_df=True, split=0.2):
     """
-    transform dataframe into train and test with split proportion with class balance
+    Transform dataframe into train and test with split proportion with class balance.
 
-    Arg:
-      df: dataframe
-      target: target column
-      balance_df: if True, balance dataframe based on target column values and sample with replacement based on min value in target
-      split: proportion of train data
-    Return:
-      train_x: train features
-      train_y: train target
-      test_x: test features
-      test_y: test target
-      
+    Args:
+        data: DataFrame
+        target: str, target column
+        balance_df: bool, if True, balance dataframe based on target column values and sample with replacement based on min value in target
+        split: float, proportion of train data
+    Returns:
+        train_x: DataFrame, train features
+        train_y: Series, train target
+        valid_x: DataFrame, validation features
+        valid_y: Series, validation target
     """
     df = data.copy()
 
     # Shuffle the dataframe
-    df = df.sample(frac=1).reset_index(drop=True)
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
-    # print how many tota sample are in data then also print how many samples in each class
-    print("Total samples",df.shape[0])
+    # Print how many total samples are in data, then also print how many samples in each class
+    print("Total samples", df.shape[0])
     print(df[target].value_counts())
 
-    
     if balance_df:
-        # Balance dataframe based on target column values and sample with replacement based on min value in target
-        df = df.groupby(target).apply(lambda x: x.sample(df[target].value_counts().min(), replace=True)).reset_index(drop=True)
-        
-        # print how many samples in each class
-        print("Balance set",df[target].value_counts())
+        # Get minimum count of target column
+        min_count = df[target].value_counts().min()
+        # Number of unique classes in target
+        num_classes = df[target].unique()
 
-    # Split dataframe into train and valid
-    train_size = 1 - split
-    train_dfs, valid_dfs = [], []
+        # Number of samples in train after balancing
+        train_size = int(min_count * (1 - split))
 
-    for _, group_df in df.groupby(target):
-        group_size = len(group_df)
-        group_train_size = int(group_size * train_size)
+        print("Train size", train_size)
 
-        # Split each group into train and valid proportionally
-        train_df = group_df.head(group_train_size)
-        valid_df = group_df.tail(group_size - group_train_size)
+        # Initialize train and valid
+        df_train = pd.DataFrame()
+        df_valid = pd.DataFrame()
 
-        train_dfs.append(train_df)
-        valid_dfs.append(valid_df)
+        for class_ in num_classes:
+            # Create dataframe where target is equal to class
+            df_class = df[df[target] == class_]
 
-    # Concatenate the dataframes for train and valid sets
-    df_train = pd.concat(train_dfs).sample(frac=1).reset_index(drop=True)
-    df_valid = pd.concat(valid_dfs).sample(frac=1).reset_index(drop=True)
+            # Balance the class based on min_count
+            df_class = df_class.sample(min_count, replace=True)
 
-    # shaufle df
-    df_train = shuffle(df_train, random_state=42)
-    df_valid = shuffle(df_valid, random_state=42)
+            # Split each class into train and valid proportionally
+            split_index = train_size
+            # split_index = int(len(df_class) * split)
 
-    # split into train_x and train_y
-    train_x = df_train.drop(target, axis=1)
-    train_y = df_train[target]
+            df_train_class = df_class.iloc[:split_index]
+            df_valid_class = df_class.iloc[split_index:]
 
-    # split into valid_x and valid_y
-    valid_x = df_valid.drop(target, axis=1)
-    valid_y = df_valid[target]
+            # Append df_train_class to df_train and df_valid_class to df_valid
+            df_train = df_train.append(df_train_class)
+            df_valid = df_valid.append(df_valid_class)
 
-    # print how many samples in each set
-    print("Return train \n",df_train[target].value_counts())
-    print("Return valid \n",df_valid[target].value_counts())
+        # Shuffle df_train and df_valid
+        df_train = df_train.sample(frac=1, random_state=42).reset_index(drop=True)
+        df_valid = df_valid.sample(frac=1, random_state=42).reset_index(drop=True)
 
-    return train_x, train_y, valid_x, valid_y
+        return (
+            df_train.drop(target, axis=1),
+            df_train[target],
+            df_valid.drop(target, axis=1),
+            df_valid[target],
+        )
+    else:
+        # If not balancing, split the data directly
+        split_index = int((1 - split) * len(df))
+        df_train = df.iloc[:split_index].reset_index(drop=True)
+        df_valid = df.iloc[split_index:].reset_index(drop=True)
+
+        return (
+            df_train.drop(target, axis=1),
+            df_train[target],
+            df_valid.drop(target, axis=1),
+            df_valid[target],
+        )
 
 
 

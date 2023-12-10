@@ -841,3 +841,36 @@ def transform_dataframe(data,target,balance_df=True,split=0.2):
     df = df.drop(df_valid.index).reset_index(drop=True)
 
   return df
+
+# for kaggle
+import zipfile
+import os
+from IPython.display import FileLink
+
+# zip current folder for kaggle folder
+def kaggle_zip_dir(directory = os.curdir, file_name = 'directory.zip'):
+    """
+    zip all the files in a directory for kaggle can also be use other default is for kaggle
+    
+    Parameters
+    _____
+    directory: str
+        directory needs to be zipped, defualt is current working directory
+        
+    file_name: str
+        the name of the zipped file (including .zip), default is 'directory.zip'
+        
+    Returns
+    _____
+    Creates a hyperlink, which can be used to download the zip file)
+    """
+    os.chdir(directory)
+    zip_ref = zipfile.ZipFile(file_name, mode='w')
+    for folder, _, files in os.walk(directory):
+        for file in files:
+            if file_name in file:
+                pass
+            else:
+                zip_ref.write(os.path.join(folder, file))
+
+    return FileLink(file_name)

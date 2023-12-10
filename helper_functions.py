@@ -154,7 +154,7 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
 
   # try if learning rate
   try :
-    if pl_history.history['lr']:
+    if pl_history.history['lr'] and pl_history:
       learing_data = pd.DataFrame(pl_history.history)
       # Find 5 highest val_accuracy and show them in plot
       learing_data['epoch'] = learing_data.index + 1
@@ -176,28 +176,31 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
 
   print()
 
-  # plot loss history
+  if pl_history:
+    # plot loss history
 
-  plt.figure(figsize=lost_fig_size)
-  plt.subplot(2, 1, 1)
-  plt.plot(pl_history.history['loss'])
-  plt.plot(pl_history.history['val_loss'])
-  plt.title('model loss')
-  plt.ylabel('loss')
-  plt.xlabel('epoch')
-  plt.legend(['train', 'val'], loc='upper left')
+    plt.figure(figsize=lost_fig_size)
+    plt.subplot(2, 1, 1)
+    plt.plot(pl_history.history['loss'])
+    plt.plot(pl_history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'], loc='upper left')
 
 
-  plt.subplot(2, 1, 2)
-  plt.plot(pl_history.history['accuracy'])
-  plt.plot(pl_history.history['val_accuracy'])
-  plt.title('model accuracy')
-  plt.ylabel('accuracy')
-  plt.xlabel('epoch')
-  plt.legend(['train', 'val'], loc='upper left')
+    plt.subplot(2, 1, 2)
+    plt.plot(pl_history.history['accuracy'])
+    plt.plot(pl_history.history['val_accuracy'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'], loc='upper left')
 
-  plt.show()
-
+    plt.show()
+  else:
+    print(" No History Data To Plot")
+    
   # make confusion matrix
   make_confusion_matrix(pl_y_test, pl_y_pred > 0.5, classes=classes, figsize=figsize, text_size=text_size, norm=norm, savefig=savefig)
 

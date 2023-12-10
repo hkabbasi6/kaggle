@@ -154,7 +154,7 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
 
   # try if learning rate
   try :
-    if pl_history.history['lr'] and pl_history:
+    if pl_history != None and pl_history.history['lr'] and pl_history :
       learing_data = pd.DataFrame(pl_history.history)
       # Find 5 highest val_accuracy and show them in plot
       learing_data['epoch'] = learing_data.index + 1
@@ -176,7 +176,7 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
 
   print()
 
-  if pl_history:
+  if pl_history !=None and pl_history :
     # plot loss history
 
     plt.figure(figsize=lost_fig_size)

@@ -7,6 +7,7 @@ from sklearn.metrics import confusion_matrix
 # import tensorflow as tf
 import pandas as pd
 import zipfile
+from sklearn.metrics import classification_report
 
 # Our function needs a different name to sklearn's plot_confusion_matrix
 def make_confusion_matrix(y_true, y_pred,
@@ -203,6 +204,108 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
     
   # make confusion matrix
   make_confusion_matrix(pl_y_test, pl_y_pred > 0.5, classes=classes, figsize=figsize, text_size=text_size, norm=norm, savefig=savefig)
+
+
+def multiple_plot_loss_history_confiusion_matrix(model, pl_history="", pl_X_test="", pl_y_test="", tensorflow_dataset=False,
+                                               classes=None, lost_fig_size=(4, 4), figsize=(10, 10),
+                                               text_size=15, norm=True, savefig=False,
+                                               save_model=False, save_path=""):
+
+    """ Make skelearn report for mutiple label classification with loass and accuracy plot with learning rate if preset
+  and confusion matrix and loss history also showing higest validation accuracy against learning rate also
+  option to save model and confusion matrix to file, if tensorflow dataset is used yhen X_test assume that
+   batch size is X_test position
+
+  Arug:
+    model: model
+    pl_history: history of model
+    pl_X_test: test data input
+    pl_y_test: test data output
+    tensorflow_dataset:  default = False
+    classes: classes if avilable else None
+    lost_fig_size: size of lossand accuracy plot
+    figsize: size of confusion matrix
+    text_size: size of text in confusion matrix
+    norm: normalize confusion matrix with % result in confusion matrix
+    savefig: save confusion matrix to file (default=False)
+    save_model: save model( default=False)
+    save_path: path to save model (default="")
+    """
+
+
+  
+    # made pl_y_pred using argmax for multi-class classification
+    pl_y_pred_before = model.predict(pl_X_test)
+
+    # evaluate model:
+    print('Evaluate model:')
+    evaluate_data = model.evaluate(pl_X_test, pl_y_test)
+    print()
+
+    # Save model
+    if save_model:
+        model.save(f"{save_path}_{round((evaluate_data[1]), 2)}")
+        print(f"Model saved to {save_path}_{round((evaluate_data[1]), 2)}")
+        print()
+
+    # try if learning rate
+    try:
+        if pl_history is not None and 'lr' in pl_history.history and pl_history:
+            learning_data = pd.DataFrame(pl_history.history)
+            # Find 5 highest val_accuracy and show them in plot
+            learning_data['epoch'] = learning_data.index + 1
+            learning_data = learning_data.sort_values('val_accuracy', ascending=False)
+            learning_data = learning_data.head(5)
+
+            # print(learning_data)
+            print(learning_data[["lr", 'val_accuracy', "val_loss"]])
+            print()
+
+    except:
+        pass
+      
+    pl_y_test_int = np.argmax(pl_y_test, axis=1)
+    # made pl_y_pred using argmax for 
+    # i-class classification
+    pl_y_pred = np.argmax(model.predict(pl_X_test), axis=1)   
+    
+    if classes:
+        print(classification_report(pl_y_test_int, pl_y_pred, target_names=classes))
+    else:
+        print(classification_report(pl_y_test_int, pl_y_pred))
+
+    print()
+
+    if pl_history is not None and pl_history:
+        # plot loss history
+
+        plt.figure(figsize=lost_fig_size)
+        plt.subplot(2, 1, 1)
+        plt.plot(pl_history.history['loss'])
+        plt.plot(pl_history.history['val_loss'])
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'val'], loc='upper left')
+
+        plt.subplot(2, 1, 2)
+        plt.plot(pl_history.history['accuracy'])
+        plt.plot(pl_history.history['val_accuracy'])
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'val'], loc='upper left')
+
+        plt.show()
+    else:
+        print(" No History Data To Plot")
+        
+        
+
+    # make confusion matrix
+
+    make_confusion_matrix(pl_y_test_int, pl_y_pred, classes=classes, figsize=figsize, text_size=text_size, norm=norm,
+                          savefig=savefig)
 
 
 # function to plot loss and

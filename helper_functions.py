@@ -209,7 +209,7 @@ def binary_plot_loss_history_confiusion_matrix(model,pl_history="", pl_X_test=""
 def multiple_plot_loss_history_confiusion_matrix(model, pl_history="", pl_X_test="", pl_y_test="", tensorflow_dataset=False,
                                                classes=None, lost_fig_size=(4, 4), figsize=(10, 10),
                                                text_size=15, norm=True, savefig=False,
-                                               save_model=False, save_path=""):
+                                               save_model=False, save_path="",model_name=""):
 
     """ Make skelearn report for mutiple label classification with loass and accuracy plot with learning rate if preset
   and confusion matrix and loss history also showing higest validation accuracy against learning rate also
@@ -283,7 +283,7 @@ def multiple_plot_loss_history_confiusion_matrix(model, pl_history="", pl_X_test
         plt.subplot(2, 1, 1)
         plt.plot(pl_history.history['loss'])
         plt.plot(pl_history.history['val_loss'])
-        plt.title('model loss')
+        plt.title(f'{model_name} loss')
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'val'], loc='upper left')
@@ -291,7 +291,7 @@ def multiple_plot_loss_history_confiusion_matrix(model, pl_history="", pl_X_test
         plt.subplot(2, 1, 2)
         plt.plot(pl_history.history['accuracy'])
         plt.plot(pl_history.history['val_accuracy'])
-        plt.title('model accuracy')
+        plt.title(f'{model_name} accuracy')
         plt.ylabel('accuracy')
         plt.xlabel('epoch')
         plt.legend(['train', 'val'], loc='upper left')

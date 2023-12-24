@@ -264,7 +264,7 @@ def multiple_plot_loss_history_confiusion_matrix(model, pl_history="", pl_X_test
     except:
         pass
       
-    pl_y_test_int = tf.reduce_max(pl_y_test, axis=1)
+    pl_y_test_int = pl_y_test
     # made pl_y_pred using argmax for 
     # i-class classification
     pl_y_pred = tf.reduce_max(model.predict(pl_X_test), axis=1)   
